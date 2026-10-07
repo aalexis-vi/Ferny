@@ -10,16 +10,34 @@
   <title>Jardín Floral · Para ti</title>
   <meta name="description" content="Un jardín floral interactivo en 3D con cartas escondidas en cada flor." />
 
+  <!-- Íconos y app instalable -->
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="Jardín" />
+
+  <!-- Vista previa al compartir el enlace (WhatsApp, Instagram, etc.) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:title" content="Un jardín que florece contigo 🌸" />
+  <meta property="og:description" content="Cada flor guarda una carta. Ábrela y deja que te cuente lo que siento." />
+  <meta property="og:image" content="og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Jardín 3D con una peonía, una gerbera, una rosa y una orquídea" />
+  <meta name="twitter:card" content="summary_large_image" />
+
   <!-- Three.js + OrbitControls (r128) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <!-- Post-procesado (resplandor suave / bloom) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -121,6 +139,15 @@
       animation: ring 2.2s ease-out infinite;
     }
     #intro:hover .bloom-btn { transform: translateY(-2px) scale(1.02); }
+    .bloom-btn .spinner { display: none; }
+    .bloom-btn.loading { opacity: .85; cursor: progress; }
+    .bloom-btn.loading::after { animation: none; opacity: 0; }
+    .bloom-btn.loading .spinner {
+      display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, .45); border-top-color: #fff;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .intro-petal {
       position: absolute; top: -40px; font-size: 18px; opacity: .8; pointer-events: none;
       animation: introFall linear infinite;
@@ -237,6 +264,11 @@
 </head>
 
 <body class="font-body antialiased">
+  <noscript>
+    <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;color:#4f2638;z-index:99">
+      Activa JavaScript para ver el jardín 🌸
+    </div>
+  </noscript>
   <!-- Lienzo 3D -->
   <div id="scene" aria-label="Jardín floral 3D interactivo"></div>
   <div id="vignette"></div>
@@ -250,8 +282,8 @@
       <p class="mt-4 text-sm leading-6 text-[color:var(--ink-soft)]">
         Cada flor guarda una carta. Explora, acércate y deja que te cuenten lo que siento.
       </p>
-      <button id="intro-btn" class="bloom-btn mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium tracking-wide">
-        Toca para hacer florecer el jardín 🌸
+      <button id="intro-btn" class="bloom-btn loading mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium tracking-wide" aria-busy="true">
+        <span class="spinner" aria-hidden="true"></span><span id="intro-label">Preparando el jardín…</span>
       </button>
       <p class="mt-5 text-[11px] text-[color:var(--ink-soft)] opacity-80">🎧 Suena: <em>Post Química</em> — Caloncho</p>
     </div>
@@ -326,7 +358,7 @@
   </div>
 
   <script>
-  (() => {
+  window.addEventListener('DOMContentLoaded', () => {
     'use strict';
 
     const $ = (id) => document.getElementById(id);
@@ -1625,6 +1657,10 @@
       setTimeout(() => $('hint').classList.remove('off'), 2600);
       setTimeout(() => { if (!active) $('hint').classList.add('off'); }, 11000);
     }
+    const introBtn = $('intro-btn');
+    introBtn.classList.remove('loading');
+    introBtn.removeAttribute('aria-busy');
+    $('intro-label').textContent = 'Toca para hacer florecer el jardín 🌸';
     $('intro').addEventListener('click', start);
     $('intro').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } });
 
@@ -1712,7 +1748,7 @@
       }
       sparkMat.uniforms.uPR.value = renderer.getPixelRatio();
     };
-  })();
+  });
   </script>
 </body>
 </html>
